@@ -12,7 +12,21 @@ Gemini receives the purchase request and decides which tool to call based on the
 | `get_supplier_quotes` | Returns each supplier's total price and delivery time for the requested quantity. |
 | `create_purchase_order_draft` | Validates the selected quote against the budget and deadline, then saves a local JSON draft. |
 
-The project uses sample inventory and quotes. Drafts are saved locally for review. No orders are sent to suppliers.
+Drafts are saved locally for review. No orders are sent to suppliers.
+
+## Where the data comes from
+
+The demo starts with sample data defined near the top of [`agent.py`](agent.py). The Python tools read these values and pass the results to Gemini. This version has no database or supplier API connection.
+
+| Setting | What it contains |
+| --- | --- |
+| `STOCK` | Packs currently in stock by item. The demo starts with 8 packs of paper and 30 packs of pens. |
+| `THRESHOLD` | The shared reorder threshold of 15 packs. Stock below 15 triggers a quote check. |
+| `QUOTES` | Each supplier's price per pack in INR and delivery time in days. Supplier A is ₹230 per pack with 5-day delivery. Supplier B is ₹240 per pack with 2-day delivery. These sample rates apply to both items. |
+
+The requested item, quantity, budget, and delivery deadline come from the command line. The defaults are paper, 40 packs, ₹10,000, and 3 days. The quote tool multiplies each supplier's price per pack by the requested quantity. For 40 packs, this gives ₹9,200 for A and ₹9,600 for B.
+
+To try different stock levels, thresholds, or supplier rates, edit the corresponding setting in `agent.py`. Saving a draft writes a JSON file and leaves the stock counts unchanged.
 
 ## Setup
 
