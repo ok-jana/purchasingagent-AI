@@ -50,8 +50,8 @@ Choose **Offline rehearsal (scripted)** to run the tools without a key or networ
 - Port occupied: run `$env:PORT = "8001"`, then `python server.py`, and open `http://127.0.0.1:8001`.
 - A run can save a draft before a later model request fails. Check the displayed draft before retrying.
 
-The interface is intended to run on your own computer through localhost. Keep your API key out of your GitHub repository.
+The interface is intended to run on your own computer through localhost.
 
 ## Verification
 
-The local HTTP endpoints, four offline decision scenarios, concurrent run isolation, invalid inputs, and missing-key handling were checked. Live Groq access and browser interaction should be checked on your demo computer before presenting.
+The local HTTP endpoints, four offline decision scenarios, concurrent run isolation, invalid inputs, and missing-key handling were checked.
