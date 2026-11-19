@@ -175,6 +175,8 @@ def run(request, rehearsal, key):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Low-stock purchasing assistant")
     parser.add_argument("--item", choices=STOCK, default="paper")
     parser.add_argument("--quantity", type=int, default=40)

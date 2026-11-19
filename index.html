@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartStock · Purchasing Agent</title>
+<style>
+:root{--ink:#152e38;--muted:#667780;--line:#dce3e5;--accent:#086b59;--pale:#edf5f1}
+*{box-sizing:border-box}body{margin:0;background:#f5f7f7;color:var(--ink);font:15px "Segoe UI",Arial,sans-serif}button,input,select{font:inherit}header{background:white;border-bottom:1px solid var(--line);padding:24px 5%;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font-size:24px;font-weight:750;letter-spacing:-1px}.brand span{color:var(--accent)}.sub{font-size:13px;color:var(--muted);margin-top:4px}main{max-width:1240px;margin:32px auto;padding:0 24px}h1{font-size:29px;letter-spacing:-.6px;margin:0 0 8px}h2{font-size:18px;margin:0 0 20px}p{line-height:1.6}.intro{color:var(--muted);margin:0 0 28px}.layout{display:grid;grid-template-columns:365px 1fr;gap:24px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px}.field{display:block;font-size:13px;font-weight:650;margin:0 0 17px}.field input,.field select{display:block;width:100%;margin-top:7px;padding:11px 12px;background:white;color:var(--ink);border:1px solid #c6d1d4;border-radius:7px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}button{cursor:pointer;border:1px solid var(--line);background:white;padding:9px 12px;border-radius:7px;color:var(--ink)}button:hover{border-color:var(--accent)}button:disabled{opacity:.55;cursor:wait}.primary{background:var(--accent);color:white;border:0;width:100%;padding:13px;font-weight:650}.samples{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 21px}.samples button{font-size:12px}.status{font-size:12px;border-radius:18px;background:var(--pale);padding:8px 13px;color:var(--accent)}.note{font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0 0}.result-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.result-head h2{margin:0}.empty{color:var(--muted);padding:42px 0;text-align:center}.step{border-top:1px solid var(--line);padding:19px 0 2px;margin-top:19px}.step-title{font-weight:650;font-size:14px}.step pre{font:12px/1.6 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7f7;padding:12px;border-radius:6px}.decision{border-left:3px solid var(--accent);background:var(--pale);padding:15px;margin:20px 0 0;line-height:1.6;white-space:pre-wrap}.error{color:#972f24;background:#fff1ee;padding:14px;border-radius:6px;margin-top:18px;white-space:pre-wrap}.draft{margin-top:20px;border-top:1px solid var(--line);padding-top:20px}.draft h3{margin:0 0 14px;font-size:16px}.draft-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.draft-grid small{display:block;color:var(--muted);margin-bottom:4px}.inventory-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.tag{font-size:11px;color:var(--muted);margin-left:8px}table{border-collapse:collapse;width:100%;font-size:12px;margin-top:12px}td,th{text-align:left;padding:9px 5px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}a{color:var(--accent)}[hidden]{display:none!important}@media(max-width:850px){.layout{grid-template-columns:1fr}header{align-items:flex-start}main{padding:0 16px}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<header><div><div class="brand">Smart<span>Stock</span></div><div class="sub">Purchasing agent powered by Groq</div></div><div id="connection" class="status">Connecting to local server…</div></header>
+<main><h1>Plan your next reorder</h1><p class="intro">Check stock, compare suppliers, and prepare a purchase order for review.</p>
+<div class="layout"><section>
+<form id="request" class="panel"><h2>Purchase request</h2>
+<label class="field">Item<select id="item"><option value="paper">Printer paper</option><option value="pens">Pens</option></select></label>
+<div class="two"><label class="field">Quantity (packs)<input id="quantity" type="number" min="1" max="10000000" value="40" required></label><label class="field">Delivery within (days)<input id="days" type="number" min="1" max="10000000" value="3" required></label></div>
+<label class="field">Maximum budget (INR)<input id="budget" type="number" min="1" max="10000000" value="10000" required></label>
+<label class="field">Decision mode<select id="mode"><option value="live">Live Groq LLM</option><option value="rehearse">Offline rehearsal (scripted)</option></select></label>
+<div class="samples"><button type="button" data-case="default">Standard reorder</button><button type="button" data-case="budget">Tight budget</button><button type="button" data-case="stock">Sufficient stock</button></div>
+<button id="run" class="primary" type="submit">Run purchasing agent</button><p class="note" id="mode-note">The LLM chooses the next tool using each result. Live mode requires a Groq key.</p>
+</form>
+<div class="panel"><h2>Demo data</h2><div id="inventory"></div><p class="note" id="threshold"></p><table><thead><tr><th>Supplier</th><th>Price / pack</th><th>Delivery</th></tr></thead><tbody id="quotes"></tbody></table><p class="note">Sample data comes from agent.py. Draft creation leaves stock counts unchanged.</p></div>
+</section>
+<section class="panel" aria-label="Agent results"><div class="result-head"><h2>Agent activity</h2><span id="count" class="status">Ready</span></div><div id="results" aria-live="polite"><p class="empty">Run a request to see the tool results and decision.</p></div></section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+const money=value=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(value);
+function node(tag,text,cls){const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;}
+function modeNote(){$('mode-note').textContent=$('mode').value==='live'?'The LLM chooses the next tool using each result. Live mode requires a Groq key.':'Offline rehearsal uses scripted decisions with the same local tools.';}
+$('mode').addEventListener('change',modeNote);
+document.querySelectorAll('[data-case]').forEach(button=>button.onclick=()=>{
+ $('item').value=button.dataset.case==='stock'?'pens':'paper';$('quantity').value=40;$('days').value=3;$('budget').value=button.dataset.case==='budget'?9000:10000;
+});
+async function loadConfig(){
+ try{
+ const response=await fetch('/api/config');if(!response.ok)throw new Error('Local server unavailable');
+ const data=await response.json();$('connection').textContent=data.key_ready?'Groq key configured':'Groq key needed for live mode';$('connection').title=data.model;
+ for(const [item,stock] of Object.entries(data.inventory)){const row=node('div','', 'inventory-row');row.append(node('span',item==='paper'?'Printer paper':'Pens'),node('strong',stock+' packs'));$('inventory').append(row);}
+ $('threshold').textContent='Reorder threshold: '+data.threshold+' packs';
+ for(const [supplier,[price,days]] of Object.entries(data.quotes)){const row=document.createElement('tr');[supplier,money(price),days+' days'].forEach(text=>row.append(node('td',text)));$('quotes').append(row);}
+ }catch(error){$('connection').textContent='Local server unavailable';}
+}
+function render(data,mode){
+ const target=$('results');target.replaceChildren();$('count').textContent=(data.events||[]).length+' tool calls';
+ target.append(node('p',mode==='live'?'Live Groq LLM':'Scripted offline rehearsal','note'));
+ for(const event of data.events||[]){const section=node('div','', 'step');section.append(node('div',event.tool,'step-title'),node('pre',JSON.stringify(event.result,null,2)));target.append(section);}
+ if(data.decision)target.append(node('div',data.decision,'decision'));
+ if(data.error)target.append(node('div',data.error,'error'));
+ const event=(data.events||[]).find(event=>event.tool==='create_purchase_order_draft'&&event.result.id);
+ if(event){const draft=event.result;const card=node('div','','draft');card.append(node('h3','Purchase order draft'));const grid=node('div','','draft-grid');
+ for(const [label,value] of [['Supplier',draft.supplier],['Quantity',draft.quantity+' packs'],['Total',money(draft.total_inr)],['Delivery',draft.days+' days']]){const pair=node('div','');pair.append(node('small',label),node('strong',value));grid.append(pair);}
+ card.append(grid,node('p','Saved as '+draft.file+'. Status: '+draft.status+'.','note'));const download=node('button','Download draft JSON');download.type='button';download.onclick=()=>{const {file,...saved}=draft;const url=URL.createObjectURL(new Blob([JSON.stringify(saved,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=draft.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};card.append(download);target.append(card);}
+}
+$('request').addEventListener('submit',async event=>{
+ event.preventDefault();const controls=[...$('request').elements];const mode=$('mode').value;
+ const request={item:$('item').value,quantity:Number($('quantity').value),budget:Number($('budget').value),days:Number($('days').value),mode};
+ controls.forEach(control=>control.disabled=true);$('count').textContent='Running…';$('results').replaceChildren(node('p','Working on your request. Results appear when the run finishes. Live runs can take several minutes.','empty'));
+ try{const response=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)});const data=await response.json();render(data,mode);}
+ catch(error){$('count').textContent='Connection lost';$('results').replaceChildren(node('p','Connection to the local server was interrupted. Check the server terminal and drafts folder before trying again.','error'));}
+ finally{controls.forEach(control=>control.disabled=false);}
+});
+loadConfig();
+</script>
+</body></html>
