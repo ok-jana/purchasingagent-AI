@@ -1,10 +1,10 @@
-# Gemini Purchasing Agent
+# Groq Purchasing Agent
 
-A small store needs to reorder supplies before stock runs out. This project uses Gemini to check inventory, compare supplier quotes against a budget and delivery deadline, and prepare a purchase order draft for review.
+A small store needs to reorder supplies before stock runs out. This project uses an LLM hosted by Groq to check inventory, compare supplier quotes against a budget and delivery deadline, and prepare a purchase order draft for review.
 
 ## How it works
 
-Gemini receives the purchase request and decides which tool to call based on the results it gets back. The Python tools use local sample data.
+The LLM receives the purchase request and decides which tool to call based on the results it gets back. The Python tools use local sample data.
 
 | Tool | Purpose |
 | --- | --- |
@@ -16,7 +16,7 @@ Drafts are saved locally for review. No orders are sent to suppliers.
 
 ## Where the data comes from
 
-The demo starts with sample data defined near the top of [`agent.py`](agent.py). The Python tools read these values and pass the results to Gemini. This version has no database or supplier API connection.
+The demo starts with sample data defined near the top of [`agent.py`](agent.py). The Python tools read these values and pass the results to Groq. This version has no database or supplier API connection.
 
 | Setting | What it contains |
 | --- | --- |
@@ -38,14 +38,14 @@ To try different stock levels, thresholds, or supplier rates, edit the correspon
    python -m pip install -r requirements.txt
    ```
 
-4. Create a key in [Google AI Studio](https://aistudio.google.com/app/apikey). Set it in your PowerShell session and run the agent.
+4. Create a key in [Groq Console](https://console.groq.com/keys). Set it in your PowerShell session and run the agent.
 
 ```powershell
-$env:GEMINI_API_KEY = Read-Host "Enter your Gemini API key"
+$env:GROQ_API_KEY = Read-Host "Enter your Groq API key"
 python agent.py
 ```
 
-If Windows uses the Python launcher, run `py agent.py`. Keep your API key out of GitHub and source files. Live mode uses `gemini-3.5-flash` by default and requires an internet connection and available Gemini API quota.
+If Windows uses the Python launcher, run `py agent.py`. Keep your API key out of GitHub and source files. Live mode uses `openai/gpt-oss-20b` by default and requires an internet connection and available Groq API quota.
 
 ## Demo cases
 
@@ -57,7 +57,7 @@ If Windows uses the Python launcher, run `py agent.py`. Keep your API key out of
 
 ## How to interpret the results
 
-Each numbered terminal line shows a tool call and the JSON it returned. The final `Decision (N tool calls)` line summarizes the run in Gemini's own words during live mode.
+Each numbered terminal line shows a tool call and the JSON it returned. The final `Decision (N tool calls)` line summarizes the run in the model's own words during live mode.
 
 1. **Inventory.** Compare `stock` with `threshold`. The default paper run returns 8 packs against a threshold of 15, so the agent looks for quotes.
 2. **Quotes.** Compare each quote's `total_inr` and `days` with the request. The default budget is ₹10,000 and the deadline is 3 days. Supplier A costs ₹9,200 but takes 5 days. Supplier B costs ₹9,600 and takes 2 days, so it is the only quote that meets both conditions.
@@ -67,12 +67,30 @@ A run that stops after one or two calls can be a successful decision. Check the 
 
 ## Offline rehearsal and troubleshooting
 
-Add `--rehearse` to any demo command to run the same Python tools without an API key or internet connection. The terminal shows `Mode: scripted offline rehearsal` in this mode. Use `Mode: live Gemini LLM` to demonstrate Gemini making the decisions.
+Add `--rehearse` to any demo command to run the same Python tools without an API key or internet connection. The terminal shows `Mode: scripted offline rehearsal` in this mode. Use `Mode: live Groq LLM` to demonstrate Groq making the decisions.
 
-If the live run times out, check whether VS Code can reach the Gemini API from PowerShell:
+If the live run times out, check whether VS Code can reach the Groq API from PowerShell:
 
 ```powershell
-Test-NetConnection generativelanguage.googleapis.com -Port 443
+Test-NetConnection api.groq.com -Port 443
 ```
 
-If Gemini returns HTTP 429, check your project's API quota and rate limits in Google AI Studio. If the draft tool already printed a file path before an error, check that file before rerunning.
+If Groq returns HTTP 429, check your project's API quota and rate limits in Groq Console. If the draft tool already printed a file path before an error, check that file before rerunning.
+
+## Choosing a model
+
+The default is OpenAI GPT-OSS 20B hosted by Groq. Set GROQ_MODEL to a tool-calling model available to your Groq account. For example, in PowerShell:
+
+```powershell
+$env:GROQ_MODEL = "openai/gpt-oss-120b"
+python agent.py
+```
+
+Each live demo uses up to three local function calls and up to four model requests. HTTP 401 usually indicates an invalid key, 403 can indicate access restrictions, 404 can indicate model availability, and 429 indicates a rate or quota limit. Network errors include a diagnostic message. Check your connection or try another network if your current connection cannot reach api.groq.com.
+
+[Groq model documentation](https://console.groq.com/docs/models)
+[Groq local tool calling](https://console.groq.com/docs/tool-use/local-tool-calling)
+
+## Verification
+
+The offline scenarios and mocked Groq request/response flow were checked for all three demo cases and an extended delivery deadline that makes Supplier A eligible. A live call still needs to be verified with your Groq key and account quota before presenting.
